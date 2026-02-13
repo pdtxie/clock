@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Clock</title>
+	<style>
+		html {
+			font-size: 16px;
+		}
+
+		@font-face {
+			font-family: 'supply';
+			font-weight: 400;
+			src: url('font.otf') format('opentype');
+			font-display: swap;
+		}
+
+		@font-face {
+			font-family: 'supplylight';
+			font-weight: 200;
+			src: url('light.otf') format('opentype');
+			font-display: swap;
+		}
+
+		@media (prefers-color-scheme: light) {
+			:root {
+				--bg: #262626;
+				--text: #E5E5E5;
+				--grey: #BEBEBE;
+			}
+
+			.block {
+				box-shadow: inset max(-0.8vw, -4vh) max(-0.8vw, -4vh) min(0.8vw, 4vh) rgba(229, 229, 229, 0.04), inset min(0.8vw, 4vh) min(0.8vw, 4vh) min(0.8vw, 4vh) rgba(0, 0, 0, 0.48);
+			}
+		}
+
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--bg: #E5E5E5;
+				--text: #262626;
+				--grey: #5C5C5C;
+			}
+
+			.block {
+				box-shadow: inset max(-1.2vw, -6vh) max(-1.2vw, -6vh) min(0.8vw, 4vh) rgba(255, 255, 255, 0.24), inset min(0.4vw, 2vh) min(0.4vw, 2vh) min(0.8vw, 4vh) rgba(0, 0, 0, 0.2);
+			}
+		}
+
+		.block {
+			margin: min(2.4vw, 12vh);
+			padding: min(6vw, 26vh) min(4vw, 20vh) min(2.5vw, 12.5vh) min(4vw, 20vh);
+			background: var(--bg);
+			border-radius: min(2.4vw, 12vh);
+			min-width: min(6vw, 30vh);
+		}
+
+		.block * {
+			text-align: center;
+		}
+
+		.clock, .date {
+			margin: 0; padding: 0;
+		}
+
+		.clock {
+			font-family: supply, monospace;
+			font-size: min(7.6vw, 38vh);
+			letter-spacing: -0.01em;
+			color: var(--text);
+			line-height: min(3.2vw, 16vh);
+			text-shadow: min(0.4vw, 2vh) min(0.4vw, 2vh) min(0.8vw, 4vh) rgba(0, 0, 0, 0.2);
+		}
+
+		.date {
+			font-family: supplylight, monospace;
+			font-size: min(2vw, 10vh);
+			letter-spacing: -0.03em;
+			color: var(--grey);
+			font-weight: 700;
+			line-height: min(2.2vw, 11vh);
+		}
+
+		#settings {
+			display: flex;
+			flex-direction: column;
+			flex-wrap: wrap;
+			align-self: stretch;
+			flex: 1;
+		}
+
+		html {
+			height: 100vh;
+		}
+
+		body {
+			margin: 0;
+			background-color: var(--bg);
+		}
+
+		body * {
+			user-select: none;
+			box-sizing: border-box;
+		}
+	</style>
+</head>
+
+<body style="display: flex; flex-direction: row; justify-content: space-between;">
+	<div class="block" style="margin-right: 0.5vw">
+		<p id="auckland" class="clock"></p>
+	</div>
+
+	<div id="settings" style="display: none;">
+		<legend>Settings</legend>
+		<label>
+			<input type="checkbox" id="setting-hr24"></input>
+			24 hour time
+		</label>
+		<label>
+			<input type="checkbox" id="setting-light"></input>
+			Light Mode
+		</label>
+		<label>
+			<input type="checkbox" id="setting-showDate"></input>
+			Show Date
+		</label>
+		<label>
+			<input type="checkbox" id="setting-showSeconds"></input>
+			Show Seconds
+		</label>
+		<button type="button" onclick="document.getElementById('settings').style['display'] = 'none'">Close
+			settings</button>
+	</div>
+
+	<div class="block" style="margin-left: 0.5vw">
+		<p id="berkeley" class="clock"></p>
+	</div>
+	<script>
+		let settings = {
+			hr24: true,
+			light: false,
+			showDate: false,
+			showSeconds: false
+		}
+
+		document.cookie
+			.split('; ')
+			.map(v => v.split('='))
+			.forEach(([k, v]) => {
+				if (!k) {return }
+				settings[k] = Boolean(Number(v))
+			})
+
+		document.addEventListener('contextmenu', function (e) {
+			document.getElementById("settings").style["display"] = ""
+			e.preventDefault();
+		}, false);
+
+		Object.entries(settings).forEach(([k, v]) => {
+			console.log(k)
+			const checkbox = document.getElementById("setting-" + k)
+			checkbox.checked = v
+			checkbox.addEventListener('change', (event) => {
+				const newValue = event.currentTarget.checked
+				settings[k] = newValue
+				displayClock()
+				document.cookie = `${k}=${Number(newValue)}; SameSite=None; Secure`
+			})
+		})
+
+		window.onload = displayClock
+
+		function displayClock() {
+			document.documentElement.style["color-scheme"] = settings.light ? "light" : "dark"
+			const date = new Date()
+			const seconds = settings.showSeconds ? {second: '2-digit'} : {}
+			let auckland = date.toLocaleString(settings.hr24 ? 'en-GB' : 'en-US', {timeZone: 'Pacific/Auckland', hour: '2-digit', minute: '2-digit', ...seconds});
+			let berkeley = date.toLocaleString(settings.hr24 ? 'en-GB' : 'en-US', {timeZone: 'US/Pacific', hour: '2-digit', minute: '2-digit', ...seconds});
+
+			const aucklandDate = date.toLocaleDateString(undefined, {timeZone: 'Pacific/Auckland', weekday: 'short', month: 'short', day: 'numeric'})
+			const berkeleyDate = date.toLocaleDateString(undefined, {timeZone: 'US/Pacific', weekday: 'short', month: 'short', day: 'numeric'})
+
+			auckland = `${auckland}<br><span class="date">AUCKLAND &nbsp/&nbsp GMT+13 ${settings.showDate ? "&nbsp/&nbsp " + aucklandDate : ""} </span>`
+			berkeley = `${berkeley}<br><span class="date">BERKELEY &nbsp/&nbsp GMT-08 ${settings.showDate ? "&nbsp/&nbsp " + berkeleyDate : ""}</span>`
+
+			document.getElementById("auckland").innerHTML = auckland
+			document.getElementById("berkeley").innerHTML = berkeley
+		}
+
+		async function clockLoop() {
+			while (1) {
+				displayClock()
+				await new Promise(r => setTimeout(r, 1000));
+			}
+		}
+		clockLoop()
+	</script>
+</body>
+
+</html>
